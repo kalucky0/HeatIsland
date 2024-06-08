@@ -1,29 +1,57 @@
-﻿namespace HeatIsland
+﻿using System.Diagnostics;
+using System.Text.Json;
+using System.Web;
+
+namespace HeatIsland;
+
+public partial class MainPage : ContentPage
 {
-    public partial class MainPage : ContentPage
+    public MainPage()
     {
-        int count = 0;
+        InitializeComponent();
+        LoadWebPage();
+    }
 
-        public MainPage()
+    private async Task LoadWebPage()
+    {
+        var contents = await LoadResource("index.html");
+
+        WebView webView = new WebView
         {
-            InitializeComponent();
+            Source = new HtmlWebViewSource
+            {
+                Html = contents
+            }
+        };
 
-            var mapControl = new Mapsui.UI.Maui.MapControl();
-            mapControl.Map?.Layers.Add(Mapsui.Tiling.OpenStreetMap.CreateTileLayer());
-            Content = mapControl;
-        }
+        webView.BackgroundColor = Color.FromRgb(0, 0, 0);
+        webView.Navigating += OnWebViewNavigating;
+        Content = webView;
+    }
 
-        private void OnCounterClicked(object sender, EventArgs e)
+    private void OnWebViewNavigating(object sender, WebNavigatingEventArgs e)
+    {
+        Debug.WriteLine($"Navigating to {e.Url}");
+        if (e.Url.StartsWith("cs://"))
         {
-            count++;
-
-            if (count == 1)
-                CounterBtn.Text = $"Clicked {count} time";
-            else
-                CounterBtn.Text = $"Clicked {count} times";
-
-            SemanticScreenReader.Announce(CounterBtn.Text);
+            var uri = new Uri(e.Url);
+            var query = HttpUtility.ParseQueryString(uri.Query);
+            var method = uri.Host.Substring(0, 1).ToUpper() + uri.Host.Substring(1);
+            var args = JsonSerializer.Deserialize<List<string>>(query.Get("args"));
+            GetType().GetMethod(method)?.Invoke(this, args?.ToArray());
+            e.Cancel = true;
         }
     }
 
+    private async Task<string?> LoadResource(string resourceName)
+    {
+        using var stream = await FileSystem.OpenAppPackageFileAsync(resourceName);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+
+    public void Print(string msg)
+    {
+        Debug.WriteLine(msg);
+    }
 }
