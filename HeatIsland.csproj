@@ -56,14 +56,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="LASzip" Version="0.7.0" />
+		<PackageReference Include="DotSpatial.Projections" Version="4.0.656" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="8.0.40" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="8.0.40" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Maps\" />
+		<PackageReference Include="SkiaSharp" Version="2.88.8" />
+		<PackageReference Include="Unofficial.laszip.net" Version="2.2.0" />
 	</ItemGroup>
 
 </Project>
