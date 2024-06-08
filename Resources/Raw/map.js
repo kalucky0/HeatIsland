@@ -23,7 +23,18 @@ map.on('style.load', () => {
             .then(data => {
                 if (data && data.length > 0) {
                     const cityInfo = data[0];
+                    displayCityInfo(cityInfo);
     }});
+
+    function displayCityInfo(cityInfo) {
+        const cityInfoDiv = document.getElementById('cityInfo');
+        cityInfoDiv.innerHTML = `
+            <p><strong>Display Name:</strong> ${cityInfo.display_name}</p>
+            <p><strong>Latitude:</strong> ${cityInfo.lat}</p>
+            <p><strong>Longitude:</strong> ${cityInfo.lon}</p>
+            <p><strong>Address:</strong> ${JSON.stringify(cityInfo.address, null, 2)}</p>
+        `;
+    }
 
     document.getElementById('fly').addEventListener('click', () => {
 
