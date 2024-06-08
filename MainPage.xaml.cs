@@ -17,8 +17,8 @@ public partial class MainPage : ContentPage
     private async Task LoadWebPage()
     {
         var contents = await LoadResource("index.html");
-        var mapDownloader = new MapDownloader();
-        mapDownloader.GetMap(new Point(564609, 244196), new Point(564610, 244197));
+        // var mapDownloader = new MapDownloader();
+        // mapDownloader.GetMap(new Point(564609, 244196), new Point(564610, 244197));
         WebView webView = new WebView
         {
             Source = new HtmlWebViewSource

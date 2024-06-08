@@ -10,21 +10,25 @@ const map = new mapboxgl.Map({
 map.on('style.load', () => {
     
     document.getElementById('city').addEventListener('click', () => {
-        if(event.key === 'Enter'){
+        // if(event.key === 'Enter'){
             fetchCityInfo();
-        }
+        // }
     });
 
-    function fetchCityInfo() {
+    async function fetchCityInfo() {
         const city = document.getElementById('city').value;
-        if(city)
-            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&addressdetails=1&limit=1`)
-            .then(response => response.json())
-            .then(data => {
-                if (data && data.length > 0) {
-                    const cityInfo = data[0];
-                    displayCityInfo(cityInfo);
-    }});
+        if(!city) return;
+            
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&addressdetails=1&limit=1`)
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            const cityInfo = data[0];
+            displayCityInfo(cityInfo);
+            return cityInfo;
+        }
+        return null;
+    }
 
     function displayCityInfo(cityInfo) {
         const cityInfoDiv = document.getElementById('cityInfo');
@@ -36,12 +40,13 @@ map.on('style.load', () => {
         `;
     }
 
-    document.getElementById('fly').addEventListener('click', () => {
-
+    document.getElementById('fly').addEventListener('click', async () => {
+        let response = await fetchCityInfo();
+        
         map.flyTo({
-            center: [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 100],
+            center: response != null ? [response.lon, response.lat] : [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 100],
             essential: true,
             zoom: 10
         });
     });
-}});
+});
