@@ -22,7 +22,7 @@ public class MapDownloader
             HttpClient client = new HttpClient();
             string website = await client.GetStringAsync(GenerateLinkToWebsite(a, b));
             string downloadLink = GetDownloadLink(website);
-            var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)?.Parent?.Parent?.Parent?.Parent?.FullName;
+            var projectDirectory = @"C:\Users\piotr\Desktop\Test";
             //var projectDirectory = Directory.GetParent(Environment.CurrentDirectory)?.FullName;
             if (projectDirectory == null) return;
 
