@@ -71,7 +71,43 @@ public partial class MainPage : ContentPage
         );
     }
 
-    public void Ready(string path, string pressure, string temperature, string temperatureDelta, string costPerKWh)
+    public void Ready()
+    {
+        var customFileType = new FilePickerFileType(
+            new Dictionary<DevicePlatform, IEnumerable<string>>
+            {
+                { DevicePlatform.macOS, new[] { "las", "laz" } },
+                { DevicePlatform.WinUI, new[] { ".las", ".laz" } },
+            }
+        );
+
+        PickOptions options = new()
+        {
+            PickerTitle = "Please select LiDAR scans",
+            FileTypes = customFileType,
+        };
+        PickAndShow(options);
+    }
+
+    public async Task PickAndShow(PickOptions options)
+    {
+        try
+        {
+            var files = await FilePicker.Default.PickMultipleAsync(options);
+            if (files == null) return;
+            string json = JsonSerializer.Serialize(files.Select(f => f.FullPath));
+            json = json.Replace("\\", "$");
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                webView.EvaluateJavaScriptAsync($"pathsLoaded({json})");
+            });
+        }
+        catch (Exception _)
+        {
+        }
+    }
+
+    public void Load(string path, string pressure, string temperature, string temperatureDelta, string costPerKWh)
     {
         Task.Run(() => LoadData(path, double.Parse(pressure), double.Parse(temperature), double.Parse(temperatureDelta), double.Parse(costPerKWh)));
     }

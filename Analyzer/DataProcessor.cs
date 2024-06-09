@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace HeatIsland.Analyzer;
+﻿namespace HeatIsland.Analyzer;
 
 internal sealed class DataProcessor
 {

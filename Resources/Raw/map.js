@@ -6,15 +6,10 @@ const progressPercent = document.querySelector('.info p');
 const progressItems = document.querySelectorAll('.info p')[1];
 const infoBox = document.getElementById('info');
 
-const fileQueue = [
-    "D:\\Libraries\\Downloads\\78989_1475484_M-34-64-D-d-2-1-3-3.laz",
-    "D:\\Libraries\\Downloads\\78989_1475609_M-34-64-D-d-1-2-4-4.laz",
-    "D:\\Libraries\\Downloads\\78989_1475631_M-34-64-D-d-1-4-2-2.laz",
-    "D:\\Libraries\\Downloads\\78989_1475648_M-34-64-D-d-2-3-1-1.laz"
-];
 const powerCost = 1.12;
-
-const data = {};
+let initialFiles = 0;
+let fileQueue = [];
+let data = {};
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2FsdWNraTIzIiwiYSI6ImNqNHkxMnFzMzFvdGszM2xhYjNycW00YW8ifQ.srmLkTlTXoMc9ZyXPNH-Tw';
 const map = new mapboxgl.Map({
@@ -141,6 +136,7 @@ function displayCityInfo(cityInfo) {
 
 function updateProgress(items, total) {
     progressDialog.style.display = 'flex';
+    progressDialog.querySelector('p').textContent = 'Loading data... (' + (initialFiles - fileQueue.length) + '/' + initialFiles + ')';
     const percent = Math.round((items / total) * 100);
     progressBar.style.width = percent + '%';
     progressPercent.textContent = percent + '%';
@@ -155,22 +151,33 @@ function updateProgress(items, total) {
     }
 }
 
+function pathsLoaded(paths) {
+    fileQueue = paths.map(path => path.replace(/\$\$/g, '\\'));
+    initialFiles = fileQueue.length;
+    loadFile(fileQueue.pop(), 100800, 26, 0.29, powerCost);
+}
+
 function loadFile(path, pressure, temperature, temperatureDelta, costPerKW) {
-    callCSharp('Ready', [path, pressure, temperature, temperatureDelta, costPerKW]);
+    callCSharp('Load', [path, pressure, temperature, temperatureDelta, costPerKW]);
 }
 
 function updateTileData(id, pressure, temperature, temperatureDelta, costPerKW) {
     callCSharp('GetData', [id, pressure, temperature, temperatureDelta, costPerKW]);
 }
 
+function ready() {
+    callCSharp('Ready', []);
+}
+
 searchButton.addEventListener('click', async () => {
     let response = await fetchCityInfo();
+    if (response == null) return;
 
     map.flyTo({
-        center: response != null ? [response.lon, response.lat] : [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 100],
+        center: [response.lon, response.lat],
         essential: true,
         zoom: 13
     });
 });
 
-document.addEventListener('DOMContentLoaded', async () => loadFile(fileQueue.pop(), 100800, 26, 0.29, powerCost));
+document.addEventListener('DOMContentLoaded', async () => ready());
