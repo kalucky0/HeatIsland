@@ -53,9 +53,30 @@ public partial class MainPage : ContentPage
         return reader.ReadToEnd();
     }
 
-    public void Ready(string path) => Task.Run(() => LoadData(path));
+    public void Getdata(string id, string pressure, string temperature, string temperatureDelta, string costPerKWh)
+    {
+        var result = DataProcessor.ProcessData(tiles[int.Parse(id)], double.Parse(pressure), double.Parse(temperature), double.Parse(temperatureDelta), double.Parse(costPerKWh));
+        webView.EvaluateJavaScriptAsync(
+            $"onNewData(" +
+            $"{id}," +
+            $"{result.Points}," +
+            $"{result.VegetationCoverage}," +
+            $"{result.BuildingsFootprint}," +
+            $"{result.AverageBuildingHeight}," +
+            $"{result.Energy}," +
+            $"{result.EnergyCost}," +
+            $"{result.EnergySaving}," +
+            $"{result.EnergyCostSaving}" +
+            $")"
+        );
+    }
 
-    private async Task LoadData(string path)
+    public void Ready(string path, string pressure, string temperature, string temperatureDelta, string costPerKWh)
+    {
+        Task.Run(() => LoadData(path, double.Parse(pressure), double.Parse(temperature), double.Parse(temperatureDelta), double.Parse(costPerKWh)));
+    }
+
+    private async Task LoadData(string path, double pressure, double temperature, double temperatureDelta, double costPerKWh)
     {
         var data = DataLoader.Load(
             path,
@@ -64,7 +85,7 @@ public partial class MainPage : ContentPage
                 await webView.EvaluateJavaScriptAsync($"updateProgress({info.progress}, {info.total})");
             })
         );
-        var result = DataProcessor.ProcessData(data, 100800, 26, 0.3, 1.12);
+        var result = DataProcessor.ProcessData(data, pressure, temperature, temperatureDelta, costPerKWh);
 
         var tempPath = Path.GetTempFileName();
         var renderer = new TileRenderer(data);
@@ -78,7 +99,7 @@ public partial class MainPage : ContentPage
             tiles.Add(data);
             await webView.EvaluateJavaScriptAsync(
                 $"addImage(" +
-                $"{tiles.Count}," +
+                $"{tiles.Count - 1}," +
                 $"'data:image/png;base64,{base64ImageRepresentation}'," +
                 $"{data.MinExtent.Longitude}," +
                 $"{data.MinExtent.Latitude}," +
@@ -88,7 +109,10 @@ public partial class MainPage : ContentPage
                 $"{result.VegetationCoverage}," +
                 $"{result.BuildingsFootprint}," +
                 $"{result.AverageBuildingHeight}," +
-                $"{result.EnergyCost}" +
+                $"{result.Energy}," +
+                $"{result.EnergyCost}," +
+                $"{result.EnergySaving}," +
+                $"{result.EnergyCostSaving}" +
                 $")"
             );
         });
