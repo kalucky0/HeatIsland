@@ -14,6 +14,8 @@ internal sealed class DataLoader
         double[] coordinates = new double[3];
         Dictionary<int, int> greenPoints = [];
         Dictionary<int, int> routePoints = [];
+        Dictionary<int, double> buildingsPoints = [];
+        List<double> groundHeights = [];
 
         for (int i = 0; i < numberOfPoints; i++)
         {
@@ -21,23 +23,29 @@ internal sealed class DataLoader
             lazReader.laszip_get_coordinates(coordinates);
             byte classification = lazReader.point.classification;
 
+            var x = (int)Math.Floor(coordinates[0] - lazReader.header.min_x);
+            var y = (int)Math.Floor(coordinates[1] - lazReader.header.min_y);
+            var id = Utils.CompoundId(x, y);
+
             if (classification == 0)
             {
-                var x = (int)Math.Floor(coordinates[0] - lazReader.header.min_x);
-                var y = (int)Math.Floor(coordinates[1] - lazReader.header.min_y);
-                var id = Utils.CompoundId(x, y);
-
                 if (routePoints.ContainsKey(id))
                     routePoints[id]++;
                 else
                     routePoints[id] = 1;
             }
+            else if (classification == 2)
+            {
+                var groundHeight = coordinates[2];
+                groundHeights.Add(groundHeight);
+            }
+            else if (classification == 6)
+            {
+                var buildingHeight = coordinates[2];
+                buildingsPoints[id] = buildingHeight;
+            }
             else if (classification > 2 && classification < 6)
             {
-                var x = (int)Math.Floor(coordinates[0] - lazReader.header.min_x);
-                var y = (int)Math.Floor(coordinates[1] - lazReader.header.min_y);
-                var id = Utils.CompoundId(x, y);
-
                 if (greenPoints.ContainsKey(id))
                     greenPoints[id]++;
                 else
@@ -48,6 +56,9 @@ internal sealed class DataLoader
         var width = (int)Math.Ceiling(lazReader.header.max_x - lazReader.header.min_x);
         var height = (int)Math.Ceiling(lazReader.header.max_y - lazReader.header.min_y);
 
+        var minExtent = Utils.ConvertEPSG2180ToWGS84(lazReader.header.min_x, lazReader.header.min_y);
+        var maxExtent = Utils.ConvertEPSG2180ToWGS84(lazReader.header.max_x, lazReader.header.max_y);
+
         lazReader.laszip_clean();
         lazReader.laszip_close_reader();
 
@@ -55,7 +66,11 @@ internal sealed class DataLoader
             Width = width,
             Height = height,
             GreenPoints = greenPoints,
-            RoutePoints = routePoints
+            RoutePoints = routePoints,
+            BuildingsFootprint = buildingsPoints.Count,
+            MinExtent = (minExtent[0], minExtent[1]),
+            MaxExtent = (maxExtent[0], maxExtent[1]),
+            AverageBuildingHeight = buildingsPoints.Count > 0 ? buildingsPoints.Values.Average() - groundHeights.Average() : 0,
         };
     }
 }
