@@ -75,7 +75,12 @@ public partial class MainPage : ContentPage
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             await webView.EvaluateJavaScriptAsync(
-                $"addImage('data:image/png;base64,{base64ImageRepresentation}', {data.MinExtent.Longitude}, {data.MinExtent.Latitude}, {data.MaxExtent.Longitude}, {data.MaxExtent.Latitude})"
+                $"addImage(" +
+                $"'data:image/png;base64,{base64ImageRepresentation}'," +
+                $"{data.MinExtent.Longitude}," +
+                $"{data.MinExtent.Latitude}," +
+                $"{data.MaxExtent.Longitude}," +
+                $"{data.MaxExtent.Latitude})"
             );
         });
     }

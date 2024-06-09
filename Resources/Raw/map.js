@@ -12,6 +12,8 @@ const fileQueue = [
     "D:\\Libraries\\Downloads\\78989_1475648_M-34-64-D-d-2-3-1-1.laz"
 ];
 
+const data = {};
+
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2FsdWNraTIzIiwiYSI6ImNqNHkxMnFzMzFvdGszM2xhYjNycW00YW8ifQ.srmLkTlTXoMc9ZyXPNH-Tw';
 const map = new mapboxgl.Map({
     container: 'map',
@@ -25,6 +27,22 @@ map.on('load', () => {
         [14.0745211117, 49.0273953314],
         [24.0299857927, 54.8515359564]
     ]);
+});
+
+map.on('click', (e) => {
+    const position = e.lngLat;
+    const obj = Object.values(data).find((value) => {
+        const bbox = value.bbox;
+        console.log(position.lng, bbox[1], bbox[3], position.lat, bbox[0], bbox[2]);
+        return position.lng >= bbox[1] && position.lng <= bbox[3] && position.lat >= bbox[0] && position.lat <= bbox[2];
+    });
+    if (obj) {
+        const bbox = obj.bbox;
+        map.fitBounds([
+            [bbox[1], bbox[0]],
+            [bbox[3], bbox[2]]
+        ]);
+    }
 });
 
 async function fetchCityInfo() {
@@ -44,6 +62,7 @@ async function fetchCityInfo() {
 
 function addImage(dataUri, minLon, minLat, maxLon, maxLat) {
     const uniqueId = Math.random().toString(36).substring(7);
+    data[uniqueId] = { bbox: [minLon, minLat, maxLon, maxLat] };
     map.addSource(uniqueId, {
         'type': 'image',
         'url': dataUri,
