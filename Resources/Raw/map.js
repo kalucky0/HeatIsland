@@ -15,7 +15,6 @@ const fileQueue = [
 const powerCost = 1.12;
 
 const data = {};
-const samples = {};
 
 mapboxgl.accessToken = 'pk.eyJ1Ijoia2FsdWNraTIzIiwiYSI6ImNqNHkxMnFzMzFvdGszM2xhYjNycW00YW8ifQ.srmLkTlTXoMc9ZyXPNH-Tw';
 const map = new mapboxgl.Map({
@@ -49,15 +48,25 @@ map.on('click', async (e) => {
         updateInfoBox(obj);
 
         const weather = await getWeather();
+        let costs = [];
+        let savings = [];
         for (let i = 0; i < weather.temperatures.length; i++) {
             const temperature = weather.temperatures[i];
             const pressure = weather.pressures[i];
             let delta = 0;
-            if (temperature > 20) {
-                delta = temperature - 20;
-            }
-            updateTileData(obj.id, pressure, temperature, delta, powerCost);
+            if (temperature > 20) delta = temperature - 20;
+            const energy = calculateEnergy(obj.buildingsFootprint * obj.averageBuildingHeight, pressure, temperature, delta);
+            costs.push(calculateEnergyCost(energy, powerCost));
+            if (delta > 0) {
+                const savedEnergy = calculateEnergy(obj.buildingsFootprint * obj.averageBuildingHeight, pressure, temperature, 0.29);
+                savings.push(calculateEnergyCost(savedEnergy, powerCost));
+            } 
         }
+        obj.energyCost = costs.reduce((acc, value) => acc + value, 0) / costs.length;
+        obj.energyCostYear = obj.energyCost * 24 * 365;
+        obj.energyCostSaved = savings.reduce((acc, value) => acc + value, 0) / savings.length;
+        obj.energyCostSavedYear = obj.energyCostSaved * 24 * 365;
+        updateInfoBox(obj);
     }
 });
 
@@ -80,23 +89,20 @@ function updateInfoBox(obj) {
     console.log(obj);
     const points = parseFloat(obj.points).toFixed(1);
     const vegetationCoverage = parseFloat(obj.vegetationCoverage).toFixed(3);
-    const buildingsFootprint = parseFloat(obj.buildingsFootprint).toFixed(2);
-    const averageBuildingHeight = parseFloat(obj.averageBuildingHeight).toFixed(2);
-    const energyCost = parseFloat(obj.energyCost).toFixed(2);
-    const yearCost = samples[obj.id] ? samples[obj.id].reduce((acc, sample) => acc + sample.energyCost, 0) * 24 : 0;
-    const energyCostSaving = samples[obj.id] ? samples[obj.id].reduce((acc, sample) => acc + sample.energyCostSaving, 0) * 24 : 0;
+    const buildingsFootprint = parseFloat(obj.buildingsFootprint);
+    const averageBuildingHeight = parseFloat(obj.averageBuildingHeight);
+    const color = `color: ${vegetationCoverage > 0.2 ? '#66bb6a' : vegetationCoverage > 0.1 ? '#ff9800' : '#f25757'}`;
     infoBox.innerHTML = `
             <p><strong>Points:</strong> ${points}</p>
-            <p><strong>Vegetation Coverage:</strong> ${vegetationCoverage}%</p>
-            <p><strong>Buildings Footprint:</strong> ${buildingsFootprint} m²</p>
-            <p><strong>Average Building Height:</strong> ${averageBuildingHeight} m</p>
+            <p><strong>Vegetation Coverage:</strong> <span style="${color}">${vegetationCoverage}%</span></p>
+            <p><strong>Buildings Footprint:</strong> ${buildingsFootprint.toFixed(2)} m²</p>
+            <p><strong>Average Building Height:</strong> ${averageBuildingHeight.toFixed(2)} m</p>
             <p><strong>Energy Cost:</strong></p>
-            <p>&nbsp;&nbsp;&nbsp;${energyCost} PLN per hour</p>
-            <p>&nbsp;&nbsp;&nbsp;${yearCost.toFixed(2)} PLN per year</p>
-            <p><strong>Potential Energy Savings:</strong></p>
-            <p>&nbsp;&nbsp;&nbsp;${obj.energyCostSaving.toFixed(2)} PLN per hour</p>
-            <p>&nbsp;&nbsp;&nbsp;${energyCostSaving.toFixed(2)} PLN per year</p>
-            <small>Based on ${samples[obj.id] ? samples[obj.id].length : 0} samples</small>
+            <p>&nbsp;&nbsp;&nbsp;${obj.energyCost ? obj.energyCost.toFixed(2) : 0} PLN per hour</p>
+            <p>&nbsp;&nbsp;&nbsp;${obj.energyCostYear ? obj.energyCostYear.toFixed(2) : 0} PLN per year</p>
+            <p><strong>+1% in Vegetation Coverage:</strong></p>
+            <p>&nbsp;&nbsp;&nbsp;-${(obj.energyCostSaved ? obj.energyCostSaved.toFixed(2) : 0)} PLN per hour</p>
+            <p>&nbsp;&nbsp;&nbsp;-${(obj.energyCostSavedYear ? obj.energyCostSavedYear.toFixed(2) : 0)} PLN per year</p>
         `;
 }
 
@@ -143,7 +149,7 @@ function updateProgress(items, total) {
         setTimeout(() => {
             progressDialog.style.display = 'none';
             if (fileQueue.length > 0) {
-                loadFile(fileQueue.pop(), 100800, 26, 0.3, powerCost);
+                loadFile(fileQueue.pop(), 100800, 26, 0.29, powerCost);
             }
         }, 1000);
     }
@@ -157,36 +163,6 @@ function updateTileData(id, pressure, temperature, temperatureDelta, costPerKW) 
     callCSharp('GetData', [id, pressure, temperature, temperatureDelta, costPerKW]);
 }
 
-function onNewData(id, points, vegetationCoverage, buildingsFootprint, averageBuildingHeight, energy, energyCost, energySaving, energyCostSaving) {
-    console.log(id, points, vegetationCoverage, buildingsFootprint, averageBuildingHeight, energy, energyCost, energySaving, energyCostSaving);
-    if (samples[id] === undefined) {
-        samples[id] = [];
-    }
-    samples[id].push({ points, vegetationCoverage, buildingsFootprint, averageBuildingHeight, energy, energyCost, energySaving, energyCostSaving });
-    let average = { points: 0, vegetationCoverage: 0, buildingsFootprint: 0, averageBuildingHeight: 0, energy: 0, energyCost: 0, energySaving: 0, energyCostSaving: 0 };
-    samples[id].forEach(sample => {
-        average.points += sample.points;
-        average.vegetationCoverage += sample.vegetationCoverage;
-        average.buildingsFootprint += sample.buildingsFootprint;
-        average.averageBuildingHeight += sample.averageBuildingHeight;
-        average.energy += sample.energy;
-        average.energyCost += sample.energyCost;
-        average.energySaving += sample.energySaving;
-        average.energyCostSaving += sample.energyCostSaving;
-    });
-    average.id = id;
-    average.bbox = data[id].bbox;
-    average.points /= samples[id].length;
-    average.vegetationCoverage /= samples[id].length;
-    average.buildingsFootprint /= samples[id].length;
-    average.averageBuildingHeight /= samples[id].length;
-    average.energy /= samples[id].length;
-    average.energyCost /= samples[id].length;
-    average.energySaving /= samples[id].length;
-    average.energyCostSaving /= samples[id].length;
-    updateInfoBox(average);
-}
-
 searchButton.addEventListener('click', async () => {
     let response = await fetchCityInfo();
 
@@ -197,4 +173,4 @@ searchButton.addEventListener('click', async () => {
     });
 });
 
-document.addEventListener('DOMContentLoaded', async () => loadFile(fileQueue.pop(), 100800, 26, 0.3, powerCost));
+document.addEventListener('DOMContentLoaded', async () => loadFile(fileQueue.pop(), 100800, 26, 0.29, powerCost));

@@ -11,7 +11,7 @@ internal sealed class DataProcessor
         var energy = CalculateEnergy(data.BuildingsFootprint * data.AverageBuildingHeight, pressure, temperature, temperatureDelta);
         var cost = CalculateEnergyCost(energy, costPerKWh);
 
-        var energySaving = CalculateEnergy(data.BuildingsFootprint * data.AverageBuildingHeight, pressure, temperature, 0.3);
+        var energySaving = CalculateEnergy(data.BuildingsFootprint * data.AverageBuildingHeight, pressure, temperature, 0.29);
         var costSaving = CalculateEnergyCost(energySaving, costPerKWh);
 
         return new Result {
