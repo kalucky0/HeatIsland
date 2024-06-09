@@ -154,7 +154,7 @@ function updateProgress(items, total) {
             if (fileQueue.length > 0) {
                 loadFile(fileQueue.pop(), 100800, 26, 0.29, powerCost);
             }
-        }, 1000);
+        }, 100);
     }
 }
 
