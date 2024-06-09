@@ -4,20 +4,20 @@ namespace HeatIsland.Analyzer;
 
 internal sealed class DataProcessor
 {
-    public static void ProcessData(Data data)
+    public static Result ProcessData(Data data, double pressure, double temperature, double temperatureDelta, double costPerKWh)
     {
         double percent = CalculatePercentage(data.Width, data.Height, data.GreenPoints);
         double average = CalculateAverage(data.Width, data.Height, data.GreenPoints);
+        var energy = CalculateEnergy(data.BuildingsFootprint * data.AverageBuildingHeight, pressure, temperature, temperatureDelta);
+        var cost = CalculateEnergyCost(energy, costPerKWh);
 
-        Debug.WriteLine($"Min Latitude: {data.MinExtent.Latitude}, Min Longitude: {data.MinExtent.Longitude}");
-        Debug.WriteLine($"Max Latitude: {data.MaxExtent.Latitude}, Max Longitude: {data.MaxExtent.Longitude}");
-
-        Debug.WriteLine($"Green points: {percent}% of the area, average: {average} points per m2");
-        Debug.WriteLine($"Buildings footprint: {data.BuildingsFootprint} m2");
-        Debug.WriteLine($"Average building height: {data.AverageBuildingHeight} m");
-        var energy = CalculateEnergy(data.BuildingsFootprint * data.AverageBuildingHeight, 100800, 26, 0.3);
-        var cost = CalculateEnergyCost(energy, 1.12);
-        Debug.WriteLine($"Energy cost: {cost} PLN per hour");
+        return new Result {
+            VegetationCoverage = percent,
+            Points = average,
+            BuildingsFootprint = data.BuildingsFootprint,
+            AverageBuildingHeight = data.AverageBuildingHeight,
+            EnergyCost = cost
+        };
     }
 
     private static double CalculatePercentage(int width, int height, Dictionary<int, int> points)

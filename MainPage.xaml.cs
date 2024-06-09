@@ -8,6 +8,7 @@ namespace HeatIsland;
 public partial class MainPage : ContentPage
 {
     private WebView webView;
+    private List<Data> tiles = [];
 
     public MainPage()
     {
@@ -63,7 +64,7 @@ public partial class MainPage : ContentPage
                 await webView.EvaluateJavaScriptAsync($"updateProgress({info.progress}, {info.total})");
             })
         );
-        DataProcessor.ProcessData(data);
+        var result = DataProcessor.ProcessData(data, 100800, 26, 0.3, 1.12);
 
         var tempPath = Path.GetTempFileName();
         var renderer = new TileRenderer(data);
@@ -74,13 +75,21 @@ public partial class MainPage : ContentPage
         File.Delete(tempPath);
         MainThread.BeginInvokeOnMainThread(async () =>
         {
+            tiles.Add(data);
             await webView.EvaluateJavaScriptAsync(
                 $"addImage(" +
+                $"{tiles.Count}," +
                 $"'data:image/png;base64,{base64ImageRepresentation}'," +
                 $"{data.MinExtent.Longitude}," +
                 $"{data.MinExtent.Latitude}," +
                 $"{data.MaxExtent.Longitude}," +
-                $"{data.MaxExtent.Latitude})"
+                $"{data.MaxExtent.Latitude}," +
+                $"{result.Points}," +
+                $"{result.VegetationCoverage}," +
+                $"{result.BuildingsFootprint}," +
+                $"{result.AverageBuildingHeight}," +
+                $"{result.EnergyCost}" +
+                $")"
             );
         });
     }

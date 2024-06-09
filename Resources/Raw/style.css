@@ -87,3 +87,17 @@ body {
         opacity: 0.87;
     }
 }
+
+#info {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    background: #00000042;
+    z-index: 999;
+    color: #fff;
+    font-size: 14px;
+    padding: 16px 14px;
+    border-radius: 5px;
+    backdrop-filter: blur(5px);
+    line-height: 23px;
+}

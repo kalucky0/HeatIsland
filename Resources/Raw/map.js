@@ -4,6 +4,7 @@ const progressDialog = document.getElementById('loader');
 const progressBar = document.querySelector('.progress');
 const progressPercent = document.querySelector('.info p');
 const progressItems = document.querySelectorAll('.info p')[1];
+const infoBox = document.getElementById('info');
 
 const fileQueue = [
     "D:\\Libraries\\Downloads\\78989_1475484_M-34-64-D-d-2-1-3-3.laz",
@@ -42,6 +43,18 @@ map.on('click', (e) => {
             [bbox[1], bbox[0]],
             [bbox[3], bbox[2]]
         ]);
+        const points = parseFloat(obj.points).toFixed(1);
+        const vegetationCoverage = parseFloat(obj.vegetationCoverage).toFixed(3);
+        const buildingsFootprint = parseFloat(obj.buildingsFootprint).toFixed(2);
+        const averageBuildingHeight = parseFloat(obj.averageBuildingHeight).toFixed(2);
+        const energyCost = parseFloat(obj.energyCost).toFixed(2);
+        infoBox.innerHTML = `
+            <p><strong>Points:</strong> ${points}</p>
+            <p><strong>Vegetation Coverage:</strong> ${vegetationCoverage}%</p>
+            <p><strong>Buildings Footprint:</strong> ${buildingsFootprint} m²</p>
+            <p><strong>Average Building Height:</strong> ${averageBuildingHeight} m</p>
+            <p><strong>Energy Cost:</strong> ${energyCost} PLN</p>
+        `;
     }
 });
 
@@ -60,10 +73,10 @@ async function fetchCityInfo() {
     return null;
 }
 
-function addImage(dataUri, minLon, minLat, maxLon, maxLat) {
-    const uniqueId = Math.random().toString(36).substring(7);
-    data[uniqueId] = { bbox: [minLon, minLat, maxLon, maxLat] };
-    map.addSource(uniqueId, {
+function addImage(id, dataUri, minLon, minLat, maxLon, maxLat, points, vegetationCoverage, buildingsFootprint, averageBuildingHeight, energyCost) {
+    data[id] = { bbox: [minLon, minLat, maxLon, maxLat], points, vegetationCoverage, buildingsFootprint, averageBuildingHeight, energyCost };
+    console.log(data[id]);
+    map.addSource(`${id}`, {
         'type': 'image',
         'url': dataUri,
         'coordinates': [
@@ -74,9 +87,9 @@ function addImage(dataUri, minLon, minLat, maxLon, maxLat) {
         ]
     });
     map.addLayer({
-        id: uniqueId + '-layer',
+        id: id + '-layer',
         'type': 'raster',
-        'source': uniqueId,
+        'source': `${id}`,
         'paint': {
             'raster-fade-duration': 500
         }
