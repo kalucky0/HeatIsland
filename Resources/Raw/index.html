@@ -10,10 +10,20 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 
 <body>
+    <div id="loader">
+        <p>Loading data...</p>
+        <div class="bar">
+            <div class="progress" style="width: 0%"></div>
+        </div>
+        <div class="info">
+            <p>0%</p>
+            <p>0/000</p>
+        </div>
+    </div>
     <div id="map"></div>
 
     <input type="text" id="city" placeholder="City name">
-    <button id="fly">Fly</button>
+    <button id="fly">Search</button>
     <div id="cityInfo"></div>
     <script src="index.js"></script>
     <script src="map.js"></script>

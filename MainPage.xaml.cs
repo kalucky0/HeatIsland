@@ -1,13 +1,14 @@
-﻿using System.Diagnostics;
+﻿using HeatIsland.Analyzer;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Web;
-using HeatIsland.Utils;
-using Point = HeatIsland.Utils.Point;
 
 namespace HeatIsland;
 
 public partial class MainPage : ContentPage
 {
+    private WebView webView;
+
     public MainPage()
     {
         InitializeComponent();
@@ -17,9 +18,7 @@ public partial class MainPage : ContentPage
     private async Task LoadWebPage()
     {
         var contents = await LoadResource("index.html");
-        // var mapDownloader = new MapDownloader();
-        // mapDownloader.GetMap(new Point(564609, 244196), new Point(564610, 244197));
-        WebView webView = new WebView
+        webView = new WebView
         {
             Source = new HtmlWebViewSource
             {
@@ -51,6 +50,34 @@ public partial class MainPage : ContentPage
         using var stream = await FileSystem.OpenAppPackageFileAsync(resourceName);
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
+    }
+
+    public void Ready(string path) => Task.Run(() => LoadData(path));
+
+    private async Task LoadData(string path)
+    {
+        var data = DataLoader.Load(
+            path,
+            (info) => MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await webView.EvaluateJavaScriptAsync($"updateProgress({info.progress}, {info.total})");
+            })
+        );
+        DataProcessor.ProcessData(data);
+
+        var tempPath = Path.GetTempFileName();
+        var renderer = new TileRenderer(data);
+        renderer.DrawImage(tempPath);
+
+        byte[] imageArray = await File.ReadAllBytesAsync(tempPath);
+        string base64ImageRepresentation = Convert.ToBase64String(imageArray);
+        File.Delete(tempPath);
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            await webView.EvaluateJavaScriptAsync(
+                $"addImage('data:image/png;base64,{base64ImageRepresentation}', {data.MinExtent.Longitude}, {data.MinExtent.Latitude}, {data.MaxExtent.Longitude}, {data.MaxExtent.Latitude})"
+            );
+        });
     }
 
     public void Print(string msg)

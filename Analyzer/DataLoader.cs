@@ -4,7 +4,7 @@ namespace HeatIsland.Analyzer;
 
 internal sealed class DataLoader
 {
-    public static Data Load(string path)
+    public static Data Load(string path, Action<(int progress, int total)> info)
     {
         var lazReader = new laszip_dll();
         var compressed = false;
@@ -51,7 +51,12 @@ internal sealed class DataLoader
                 else
                     greenPoints[id] = 1;
             }
+
+            if (i % 10_000 == 0)
+                info((i, (int)numberOfPoints));
         }
+
+        info(((int)numberOfPoints, (int)numberOfPoints));
 
         var width = (int)Math.Ceiling(lazReader.header.max_x - lazReader.header.min_x);
         var height = (int)Math.Ceiling(lazReader.header.max_y - lazReader.header.min_y);
