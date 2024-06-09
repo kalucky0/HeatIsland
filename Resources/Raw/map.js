@@ -104,6 +104,13 @@ function updateInfoBox(obj) {
 function addImage(id, dataUri, minLon, minLat, maxLon, maxLat, points, vegetationCoverage, buildingsFootprint, averageBuildingHeight, energy, energyCost, energySaving, energyCostSaving) {
     data[id] = { id: id, bbox: [minLon, minLat, maxLon, maxLat], points, vegetationCoverage, buildingsFootprint, averageBuildingHeight, energy, energyCost, energySaving, energyCostSaving };
     console.log(data[id]);
+    if (id == '0') {
+        map.flyTo({
+            center: [(minLat + maxLat) * 0.5, (minLon + maxLon) * 0.5],
+            essential: true,
+            zoom: 13
+        });
+    }
     map.addSource(`${id}`, {
         'type': 'image',
         'url': dataUri,
